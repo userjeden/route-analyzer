@@ -1,12 +1,16 @@
 package pl.userjeden.routes.dataoutput;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import pl.userjeden.routes.businesscnfg.BusinessProperties;
 import pl.userjeden.routes.model.RouteEntry;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,18 +26,11 @@ public class OutputDataServiceJson implements OutputDataService {
     private static final Double OPACITY = 0.3d;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private BusinessProperties businessProperties;
+
 
     @Override
-    public String writeOutput(List<RouteEntry> routeEntries) throws JsonProcessingException {
-
-        RouteAssembly outputData = map(routeEntries);
-        String outputJson = objectMapper.writeValueAsString(outputData);
-        return outputJson;
-    }
-
-
-    private RouteAssembly map(List<RouteEntry> routeEntries){
+    public RouteAssembly mapForOutput(List<RouteEntry> routeEntries){
         RouteAssembly example = new RouteAssembly();
         example.setFeatures(new ArrayList<>());
 
@@ -50,9 +47,21 @@ public class OutputDataServiceJson implements OutputDataService {
         return example;
     }
 
+    @Override
+    public void writeOutput(RouteAssembly routeAssembly) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String output = gson.toJson(routeAssembly);
+
+        String fileName = businessProperties.outputFile;
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        writer.write(output);
+        writer.close();
+
+        log.info("Saved output file: {}", fileName);
+    }
+
     private String combineId(RouteEntry source){
         return String.valueOf(source.getFromSeq()) + "_" + String.valueOf(source.getToSeq());
     }
-
 
 }

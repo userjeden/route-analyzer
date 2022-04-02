@@ -4,13 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.userjeden.routes.businesscnfg.BusinessProperties;
-import pl.userjeden.routes.model.EntryPoint;
-import pl.userjeden.routes.model.HarbourArea;
 import pl.userjeden.routes.model.RouteEntry;
 
 import java.util.List;
 
-
+/**
+ * Service responsible for correcting loaded data.
+ */
 @Slf4j
 @Component
 public class HarbourClippingServiceSimple implements HarbourClippingService {
@@ -18,8 +18,10 @@ public class HarbourClippingServiceSimple implements HarbourClippingService {
     @Autowired
     private BusinessProperties businessProperties;
 
-
-
+    /**
+     * Accepts single RouteEntry and performs clipping by removing
+     * parts of the route in the harbour area (harbour manouvers).
+     */
     @Override
     public RouteEntry cropHarbourArea(RouteEntry routeEntry) {
 

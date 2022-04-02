@@ -2,6 +2,7 @@ package pl.userjeden.routes.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Slf4j
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class RouteEntry {
 
@@ -29,10 +31,10 @@ public class RouteEntry {
     private List<EntryPoint> entryPoints;
 
     /**
-     * Confirms integrity of entryPoints count
-     * equal to declared count.
+     * Confirms integrity by comparing
+     * entryPoints count and declared count.
      */
-    public boolean isValid(){
+    public boolean isIntegrity(){
         return entryPoints != null && entryPoints.size() == count;
     }
 
@@ -41,7 +43,6 @@ public class RouteEntry {
         List<EntryPoint> pointsForRemoval = new ArrayList<>();
         for(EntryPoint point : this.entryPoints){
             if(isWithinArea(point, lonA, lonB, latA, latB)){
-                log.info("Removing point: {}. {}.", point.getLongitude(), point.getLatitide());
                 pointsForRemoval.add(point);
             }
         }
@@ -50,7 +51,6 @@ public class RouteEntry {
         this.count = count - pointsForRemoval.size();
         return this;
     }
-
 
     public boolean isWithinArea(EntryPoint entryPoint, Double lonA, Double lonB, Double latA, Double latB){
         return isWithinLatitude(entryPoint, latA, latB) && isWithinLongitude(entryPoint, lonA, lonB);

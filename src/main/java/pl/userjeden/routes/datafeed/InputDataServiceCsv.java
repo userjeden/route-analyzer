@@ -14,16 +14,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service responsible for importing and parsing input data.
+ */
 @Slf4j
 @Component
 public class InputDataServiceCsv implements InputDataService {
 
     private List<String> parsingProblems;
 
+    /**
+     * Imports referenced file, checks for file correctness and integrity,
+     * and performs mapping to internal data model. In case of errors, throws
+     * an exception containing list of problems.
+     */
     @Override
-    public List<RouteEntry> parseInput(String inputFileName) throws Exception {
+    public List<RouteEntry> handleInput(String inputFileName) throws Exception {
         parsingProblems = new ArrayList<>();
 
+        List<String[]> rows = readInputFile(inputFileName);
+        List<RouteEntry> entries = parseAndMapAndValidate(rows);
+
+        if(!parsingProblems.isEmpty()){
+            String combinedProblems = String.join(", ", parsingProblems);
+            throw new InputDataException("Malformed input file. Errors: " + combinedProblems);
+        }
+
+        log.info("Successfully imported: {}", inputFileName);
+        return entries;
+    }
+
+    private List<String[]> readInputFile(String inputFileName) throws InputDataException {
         List<String[]> rows = new ArrayList<>();
         try (CSVReader reader = new CSVReader(new FileReader(inputFileName))) {
             rows = reader.readAll();
@@ -38,25 +59,24 @@ public class InputDataServiceCsv implements InputDataService {
             throw new InputDataException("Error in CSV structure. Error: " + e.getMessage());
         }
 
+        // remove header row
         rows.remove(0);
+        return rows;
+    }
+
+    private List<RouteEntry> parseAndMapAndValidate(List<String[]> rows){
         List<RouteEntry> entries = rows.stream()
                 .filter(r -> r != null && r.length == 8)
                 .map(e -> createRouteEntry(e))
                 .peek(e -> validateIntegrity(e))
                 .collect(Collectors.toList());
 
-        System.out.println(entries.get(0).getEntryPoints().size() + " " + entries.get(0));
-        System.out.println(entries.get(1).getEntryPoints().size() + " " + entries.get(1));
-
-        if(!parsingProblems.isEmpty()){
-            String combinedProblems = parsingProblems.stream().collect(Collectors.joining(", "));
-            log.error("Errors importing: {}", inputFileName);
-            throw new InputDataException("Malformed input file. Errors: " + combinedProblems);
-        } else {
-            log.info("Successfully imported: {}", inputFileName);
-        }
-
         return entries;
+    }
+
+    private RouteEntry createRouteEntry(String[] input){
+        return new RouteEntry(input[0], parseInteger(input[1]), parseInteger(input[2]), input[3], input[4],
+                parseLong(input[5]), parseInteger(input[6]), parsePointsFromEntry(input[7]));
     }
 
     private List<EntryPoint> parsePointsFromEntry(String entry) {
@@ -75,18 +95,11 @@ public class InputDataServiceCsv implements InputDataService {
                 parsingProblems.add(problem);
             }
         }
-
         return output;
     }
 
-
-    private RouteEntry createRouteEntry(String[] input){
-        return new RouteEntry(input[0], parseInteger(input[1]), parseInteger(input[2]), input[3], input[4],
-                parseLong(input[5]), parseInteger(input[6]), parsePointsFromEntry(input[7]));
-    }
-
     private void validateIntegrity(RouteEntry entry){
-        if(!entry.isValid()){
+        if(!entry.isIntegrity()){
             parsingProblems.add("Integrity problem in input id: " + entry.getId());
         }
     }
